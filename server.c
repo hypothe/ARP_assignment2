@@ -41,23 +41,23 @@ int main(int argc, char *argv[])
      listen(sockfd,5);
      clilen = sizeof(cli_addr);
      
-     if ((newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);) < 0) 
+     if ((newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen)) < 0) 
           error("ERROR on accept", newsockfd);
      bzero(buffer,256);
-	 while(in!='E')}{
+	 while(in!='E'){
 		if ((ret = read(newsockfd,&in,1)) < 0) error("ERROR reading from socket", ret);
 		switch (in){
 			case 'U':	 // go UP
-				strcpy(buffer, "Sending UP");
+				sprintf(buffer, "Sending UP");
 				break;
 			case 'S': 	// STOP
-				strcpy(buffer, "Stopping");
+				sprintf(buffer, "Stopping");
 				break;
 			case 'D': 	// go DOWN
-				strcpy(buffer, "Sending DOWN");
+				sprintf(buffer, "Sending DOWN");
 				break;
 			case 'E':	// END
-				strcpy(buffer, "ENDing communication");
+				sprintf(buffer, "ENDing communication");
 				break;
 			// default 
 		}
