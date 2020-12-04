@@ -3,8 +3,8 @@
 ## Time table
 Approximative, not hard constraints but suggestions, can obviosuly be modified to accomodate for busy days.
 
-* __Dec 03 testing the waters__: simple client and simple server, simply establish connection and transfer a message and a 
-								second socket for the reply, platform for the delivery of status messages
+* ~~__Dec 03 testing the waters__: simple client and simple server, simply establish connection and transfer a message and a 
+								second socket for the reply, platform for the delivery of status messages~~
 * __Dec 04 echoes from the web__: communication made cyclic, interface sends repeated messages and server that many replies; 
 								3 different messages types, each with its appropriate reply (basic state machine)
 * __Dec 05 preparing the ground__: server produces messages '+' and '-' cyclicaly when in the appropriate statuses
