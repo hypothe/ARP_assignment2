@@ -59,26 +59,27 @@ int main(int argc, char *argv[])
 
 	while(in!='E'){
 		if ((ret = read(newsockfd,&in,1)) < 0) error("ERROR reading from socket", ret);
+		printf("Received request ");
 		switch (in){
 			case 'U':	 // go UP
 				if (msg.status == 'T') break;
 				msg.height += STEP*(1+rand()%(MAX_STEP-msg.height/STEP));
 				msg.status = msg.height>=MAX_HEIGHT?'T':'U';
-				printf("Received request up");
+				printf("UP\n");
 				break;
 			case 'S': 	// STOP
 				msg.status = 'S';
-				printf("Received request stop");
+				printf("STOP\n");
 				break;
 			case 'D': 	// go DOWN
 				if (msg.status == 'B') break;
 				msg.height -= STEP*(1+rand()%(msg.height/STEP));
 				msg.status = msg.height<=0?'B':'D';
-				printf("Received request down");
+				printf("DOWN\n");
 				break;
 			case 'E':	// END
 				msg.status = 'E';
-				printf("Received request end");
+				printf("END\n");
 				break;
 			// default 
 		}
