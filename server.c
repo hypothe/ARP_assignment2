@@ -8,6 +8,16 @@
 #include <strings.h>
 #include <unistd.h>
 
+#define MAX_HEIGHT 200
+#define STEP 5
+#define MAX_STEP MAX_HEIGHT/STEP
+#define BUFSIZE 20
+
+typedef struct message{
+	int height;
+	char status;
+} msg_t;
+
 void error(char *msg, int ret)
 {
     perror(msg);
@@ -16,52 +26,58 @@ void error(char *msg, int ret)
 
 int main(int argc, char *argv[])
 {
-     int sockfd, newsockfd, portno, clilen;
-     //char buffer[256];
-     struct sockaddr_in serv_addr, cli_addr;
-     int ret;
-	 char in=0;
-	 char buffer[20];
-	 
-     if (argc < 2) {
-         fprintf(stderr,"ERROR, no port provided\n");
-         exit(1);
-     }
-     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
-        error("ERROR opening socket", sockfd);
-		
-     bzero((char *) &serv_addr, sizeof(serv_addr));
-     portno = atoi(argv[1]);
-     serv_addr.sin_family = AF_INET;
-     serv_addr.sin_addr.s_addr = INADDR_ANY;
-     serv_addr.sin_port = htons(portno);
-     if ((ret = bind(sockfd, (struct sockaddr *) &serv_addr,
-              sizeof(serv_addr))) < 0) 
-              error("ERROR on binding", ret);
-     listen(sockfd,5);
-     clilen = sizeof(cli_addr);
-     
-     if ((newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);) < 0) 
-          error("ERROR on accept", newsockfd);
-     bzero(buffer,256);
-	 while(in!='E')}{
+	int sockfd, newsockfd, portno, clilen;
+	struct sockaddr_in serv_addr, cli_addr;
+	int ret;
+	char in=0;
+	// char buffer[BUFSIZE];
+	msg_t msg = {0,0};
+
+	if (argc < 2) {
+	 fprintf(stderr,"ERROR, no port provided\n");
+	 exit(1);
+	}
+	if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
+	error("ERROR opening socket", sockfd);
+
+	bzero((char *) &serv_addr, sizeof(serv_addr));
+	portno = atoi(argv[1]);
+	serv_addr.sin_family = AF_INET;
+	serv_addr.sin_addr.s_addr = INADDR_ANY;
+	serv_addr.sin_port = htons(portno);
+	if ((ret = bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr))) < 0){ 
+		  error("ERROR on binding", ret);
+		  close(sockfd);
+	}
+	listen(sockfd,5);
+	clilen = sizeof(cli_addr);
+
+	if ((newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen)) < 0) 
+	  error("ERROR on accept", newsockfd);
+
+	while(in!='E'){
 		if ((ret = read(newsockfd,&in,1)) < 0) error("ERROR reading from socket", ret);
 		switch (in){
 			case 'U':	 // go UP
-				strcpy(buffer, "Sending UP");
+				if (msg.status == 'T') break;
+				msg.height += STEP*(1+rand()%(MAX_STEP-msg.height/STEP));
+				msg.status = msg.height>=MAX_HEIGHT?'T':'U';
 				break;
 			case 'S': 	// STOP
-				strcpy(buffer, "Stopping");
+				msg.status = 'S';
 				break;
 			case 'D': 	// go DOWN
-				strcpy(buffer, "Sending DOWN");
+				if (msg.status == 'B') break;
+				msg.height -= STEP*(1+rand()%(msg.height/STEP));
+				msg.status = msg.height<=0?'B':'D';
 				break;
 			case 'E':	// END
-				strcpy(buffer, "ENDing communication");
+				msg.status = 'E';
 				break;
 			// default 
 		}
-		if ((ret = write(newsockfd,buffer,20))<0) error("ERROR writing on socket", ret); 
-	 }
-     return 0; 
+		if ((ret = write(newsockfd,&msg,sizeof(msg)))<0) error("ERROR writing on socket", ret); 
+	}
+	close(newsockfd);
+	return 0; 
 }
