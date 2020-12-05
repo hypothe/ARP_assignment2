@@ -8,6 +8,7 @@
 #include <strings.h>
 #include <unistd.h>
 
+
 #define MAX_HEIGHT 200
 #define STEP 5
 #define MAX_STEP MAX_HEIGHT/STEP
@@ -33,6 +34,7 @@ int main(int argc, char *argv[])
 	// char buffer[BUFSIZE];
 	msg_t msg = {0,0};
 
+
 	if (argc < 2) {
 	 fprintf(stderr,"ERROR, no port provided\n");
 	 exit(1);
@@ -46,8 +48,8 @@ int main(int argc, char *argv[])
 	serv_addr.sin_addr.s_addr = INADDR_ANY;
 	serv_addr.sin_port = htons(portno);
 	if ((ret = bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr))) < 0){ 
-		  error("ERROR on binding", ret);
-		  close(sockfd);
+		error("ERROR on binding", ret);
+		close(sockfd);
 	}
 	listen(sockfd,5);
 	clilen = sizeof(cli_addr);
