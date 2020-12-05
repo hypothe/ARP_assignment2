@@ -64,17 +64,21 @@ int main(int argc, char *argv[])
 				if (msg.status == 'T') break;
 				msg.height += STEP*(1+rand()%(MAX_STEP-msg.height/STEP));
 				msg.status = msg.height>=MAX_HEIGHT?'T':'U';
+				printf("Received request up");
 				break;
 			case 'S': 	// STOP
 				msg.status = 'S';
+				printf("Received request stop");
 				break;
 			case 'D': 	// go DOWN
 				if (msg.status == 'B') break;
 				msg.height -= STEP*(1+rand()%(msg.height/STEP));
 				msg.status = msg.height<=0?'B':'D';
+				printf("Received request down");
 				break;
 			case 'E':	// END
 				msg.status = 'E';
+				printf("Received request end");
 				break;
 			// default 
 		}
