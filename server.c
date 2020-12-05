@@ -8,6 +8,8 @@
 #include <strings.h>
 #include <unistd.h>
 
+#define BUFSIZE 20
+
 void error(char *msg, int ret)
 {
     perror(msg);
@@ -21,7 +23,7 @@ int main(int argc, char *argv[])
      struct sockaddr_in serv_addr, cli_addr;
      int ret;
 	 char in=0;
-	 char buffer[20];
+	 char buffer[BUFSIZE];
 	 
      if (argc < 2) {
          fprintf(stderr,"ERROR, no port provided\n");
@@ -43,7 +45,7 @@ int main(int argc, char *argv[])
      
      if ((newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen)) < 0) 
           error("ERROR on accept", newsockfd);
-     bzero(buffer,256);
+     bzero(buffer,BUFSIZE);
 	 while(in!='E'){
 		if ((ret = read(newsockfd,&in,1)) < 0) error("ERROR reading from socket", ret);
 		switch (in){
@@ -57,11 +59,11 @@ int main(int argc, char *argv[])
 				sprintf(buffer, "Sending DOWN");
 				break;
 			case 'E':	// END
-				sprintf(buffer, "ENDing communication");
+				sprintf(buffer, "END communication");
 				break;
 			// default 
 		}
-		if ((ret = write(newsockfd,buffer,20))<0) error("ERROR writing on socket", ret); 
+		if ((ret = write(newsockfd,buffer,BUFSIZE))<0) error("ERROR writing on socket", ret); 
 	 }
      return 0; 
 }
