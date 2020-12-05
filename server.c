@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
 		if (FD_ISSET(newsockfd, &fd_in)){
 			if ((ret = read(newsockfd,&in,1)) < 0) error("ERROR reading from socket", ret);
 			printf("Received request: ");	// won't print nicely if we read 0 bit
-			if ( (in == 'U' && STATUS != 'T') || (in == 'D' && STATUS != 'B') || (in == 'E'))
+			if ( (in == 'U' && STATUS != 'T') || (in == 'D' && STATUS != 'B') || (in == 'E') || (in == 'S'))
 				STATUS = in;
 		}
 		
