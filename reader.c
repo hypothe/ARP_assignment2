@@ -20,14 +20,34 @@ int main(int argc, char * argv[])
 {
   int ret;
   int sockfd = atoi(argv[1]);
-  char buffer[20]; //will be used for printing hoist status
+  char buffer[25]; //will be used for printing hoist status
   msg_t msg = {0,0};
   while (1)
   {
-    bzero(buffer,20);
+    bzero(buffer, 25);
     if ((ret = read(sockfd, &msg, sizeof(msg))) < 0)
       error("ERROR reading from socket", ret);
-    printf("height: %d\tstatus: %c\n", msg.height, msg.status);
+		switch (msg.status) {
+			case 'U':
+				sprintf(buffer, "Hoist going up");
+				break;
+			case 'D':
+				sprintf(buffer, "Hoist going down");
+				break;
+			case 'S':
+				sprintf(buffer, "Hoist stopped");
+				break;
+			case 'T':
+				sprintf(buffer, "Maximal height reached");
+				break;
+			case 'B':
+				sprintf(buffer, "Minimal height reached");
+				break;
+			case 'E':
+				sprintf(buffer, "Exiting");
+				break;
+		}
+    printf("height: %d cm\tstatus: %s\n", msg.height, buffer);
     if (msg.status == 'E')
       break;
 	}
