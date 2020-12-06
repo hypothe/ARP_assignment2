@@ -11,12 +11,7 @@
 #define MIN_HEIGHT 0
 #define STEP 5
 #define MAX_STEP MAX_HEIGHT/STEP
-/*
-typedef struct message{
-	int height;
-	char status;
-} msg_t;
-*/
+
 void error(char *msg, int ret)
 {
     perror(msg);
@@ -43,15 +38,9 @@ int main(int argc, char *argv[])
 		switch (in){
 			case '+':	 // go UP
 				height = height>=MAX_HEIGHT? height:height + STEP;
-				//STATUS = msg.height>=MAX_HEIGHT?'T':'U';
-				//msg.status = STATUS;
 				break;
 			case '-': 	// go DOWN
 				height = height<=MIN_HEIGHT? height: height - STEP;
-				// msg.height -= STEP;
-				// STATUS = msg.height<=0?'B':'D';
-				// msg.status = STATUS;
-				// printf("DOWN: %d\n", msg.height);
 				break;
 			// default: // will simply do nothing
 		}

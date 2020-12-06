@@ -8,7 +8,7 @@
 #include <strings.h>
 #include <unistd.h>
 #include <sys/select.h>
-
+#include <sys/wait.h>
 
 #define MAX_HEIGHT 200
 #define MIN_HEIGHT 0
@@ -45,6 +45,7 @@ int main(int argc, char *argv[])
 	pid_t hoist;
 	char send=0;
 	int r_height=0;
+	char err_msg[256];
 
 	if (argc < 2) {
 		fprintf(stderr,"ERROR, no port provided\n");
@@ -89,7 +90,7 @@ int main(int argc, char *argv[])
 		/* Updates status only if a new one is submitted and it is compatible with current status, otherwise stop the hoist */
 		if (FD_ISSET(newsockfd, &fd_in)){
 			if ((ret = read(newsockfd,&in,1)) < 0) error("ERROR reading from socket", ret);
-			printf("Received request: ");	fflush(stdout);// won't print nicely if we read 0 bit
+			// printf("Received request: ");	fflush(stdout);// won't print nicely if we read 0 bit
 			if ((in == 'U' && STATUS != 'T') || (in == 'D' && STATUS != 'B') || (in == 'E') || (in == 'S'))
 				STATUS = in;
 		}
@@ -97,53 +98,45 @@ int main(int argc, char *argv[])
 		switch (STATUS){
 			case 'U':	 // go UP
 				send = '+';
-				// msg.height += STEP;
-				// STATUS = 'U';
-				// STATUS = msg.height>=MAX_HEIGHT?'T':'U';
-				// msg.status = STATUS;
-				// printf("UP: %d\n", msg.height);
 				break;
 			case 'D': 	// go DOWN
 				send = '-';
-				// msg.height -= STEP;
-				// STATUS = msg.height<=0?'B':'D';
-				// msg.status = STATUS;
-				// printf("DOWN: %d\n", msg.height);
 				break;
 			case 'S': 	// STOP
 				send = 0;
-				// printf("STOP: %d\n", msg.height);
-				// msg.status = STATUS;
 				break;
 			case 'T':
 				send = 0;
-				// printf("TOP: %d\n", msg.height);
-				// msg.status = STATUS;
 				break;
 			case 'B':
 				send = 0;
-				// printf("BOTTOM: %d\n", msg.height);
-				// msg.status = STATUS;
 				break;
 			case 'E':	// END
 				send = 'E';
-				// msg.status = 'E';
-				// printf("END: %d\n", msg.height);
 				break;
-			//default: // will simply do nothing
-				// msg.status = STATUS;
 		}
-		if ((ret = write(s2h[1],&send,1))<0) 			error("ERROR writing on Server - Hoist pipe", ret);
-		/* MAYBE implement some sort of timeout, so the server will know if the hoist crashed */
-		if ((ret = read(h2s[0],&r_height,sizeof(r_height)))<0) 	error("ERROR reading from Hoist - Server pipe", ret);
-		if (r_height>=MAX_HEIGHT) STATUS = 'T';	// set TOP or BOTTOM state
-		if (r_height<=MIN_HEIGHT) STATUS = 'B';	// the condition allows to take the more strict height limit if
-												// the Server and Hoist one are different (this is not the case)
+		if ((ret = write(s2h[1],&send,1))<0) 					error("ERROR writing on Server - Hoist pipe", ret);
+		
+		if ((ret = read(h2s[0],&r_height,sizeof(r_height)))<0) error("ERROR reading from Hoist - Server pipe", ret);
+		
+		if (r_height>=MAX_HEIGHT && STATUS != 'E') STATUS = 'T';	// set TOP or BOTTOM state
+		if (r_height<=MIN_HEIGHT && STATUS != 'E') STATUS = 'B';	// the condition allows to take the more strict height limit if
+																	// the Server and Hoist one are different (this is not the case)
+		if (ret == 0) STATUS = 'E';	//If the pipe results readable but nothing is read it's possible the hoist crashed								
 		msg.height = r_height; msg.status = STATUS;
-		printf("%c %d\n", msg.status, msg.height);	// FOR DEBUGGING
-		if ((ret = write(newsockfd,&msg,sizeof(msg)))<0) error("ERROR writing on socket", ret);
-		usleep(1000000*(sec-tv.tv_sec)+(usec-tv.tv_usec));	// tv will yield the amount of time passed before reading
+		
+		if ((ret = write(newsockfd,&msg,sizeof(msg)))<0) 		error("ERROR writing on socket", ret);
+		select(1, NULL, NULL, NULL, &tv); // simply used as a timer
+		//usleep(1000000*(tv.tv_sec)+(tv.tv_usec));			// tv will yield the amount of time passed before reading
 	}														// with this usleep we approximate a period of 1s for the serve
+	
+    waitpid(hoist, &ret, 0);
+	if (!WIFEXITED(ret)){
+		sprintf(err_msg, "Hoist terminated with an error %d %d\n", WIFSIGNALED(ret), WTERMSIG(ret));
+		perror(err_msg);
+	}
+	else
+		printf("Hoist exited with value %d\n", WEXITSTATUS(ret)); fflush(stdout);
 	
 	close(s2h[1]);
 	close(h2s[0]);
@@ -174,11 +167,9 @@ int spawn(char* ex_name, int *fd_in, int *fd_out, char new_shell) {
 		sprintf(tmp_in, "%d", fd_in[0]);
 		sprintf(tmp_out, "%d", fd_out[1]);
 		if (new_shell){ 
-		//char *args[] = { "/usr/bin/konsole",  "-e", ex_name, tmp_in, tmp_out, (char*)NULL }; 
-		args[i++] = "/usr/bin/konsole";
-		args[i++] = "-e";
+			args[i++] = "/usr/bin/konsole";
+			args[i++] = "-e";
 		}
-		//char *args[] = { ex_name, tmp_in, tmp_out, (char*)NULL };
 		args[i++] = ex_name;
 		args[i++] = tmp_in;
 		args[i++] = tmp_out;
