@@ -5,6 +5,11 @@
 #include <strings.h>
 #include <string.h>
 
+typedef struct message{
+	int height;
+	char status;
+} msg_t;
+
 void error(char *msg, int ret)
 {
     perror(msg);
@@ -16,13 +21,14 @@ int main(int argc, char * argv[])
   int ret;
   int sockfd = atoi(argv[1]);
   char buffer[20]; //will be used for printing hoist status
+  msg_t msg = {0,0};
   while (1)
   {
     bzero(buffer,20);
-    if ((ret = read(sockfd, buffer, 20)) < 0)
+    if ((ret = read(sockfd, &msg, sizeof(msg))) < 0)
       error("ERROR reading from socket", ret);
-    printf("%s\n",buffer);
-    if (strcmp(buffer, "END communication") == 0)
+    printf("height: %d\tstatus: %c\n", msg.height, msg.status);
+    if (msg.status == 'E')
       break;
 	}
   exit (0);
