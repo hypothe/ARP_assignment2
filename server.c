@@ -17,7 +17,7 @@
 #define BUFSIZE 20
 
 
-int spawn(char *ex_name, int *fd_in, int *fd_out, char new_shell);
+int spawn(char *ex_name, int fd_log, int *fd_in, int *fd_out, char new_shell);
 
 typedef struct message{
 	int height;
@@ -32,6 +32,7 @@ void error(char *msg, int ret)
 
 int main(int argc, char *argv[])
 {
+	const char *NAME = "SERVER";
 	char STATUS = 'B';
 	int sockfd, newsockfd, portno, clilen;
 	struct sockaddr_in serv_addr, cli_addr;
@@ -46,13 +47,27 @@ int main(int argc, char *argv[])
 	char send=0;
 	int r_height=0;
 	char err_msg[256];
+	
+	FILE *log;
+	char fd_log_str[20];
+	int  fd_log;
+	char *log_file = "./server_log.txt";
+	
+	if((log = fopen(log_file, "w"))==(FILE*)NULL){	// See NOTE_2
+		perror("Log file open from");
+		exit(1);
+	}
+	fd_log = fileno(log);
 
 	if (argc < 2) {
 		fprintf(stderr,"ERROR, no port provided\n");
 		exit(1);
 	}
+	fprintf(log, "%s: starting\n", NAME); fflush(log);
+	
 	if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
 		error("ERROR opening socket", sockfd);
+	fprintf(log, "%s: socket opened\n", NAME); fflush(log);
 		
 	if((ret = pipe(s2h))<0){
 		error("ERROR opening Server - Hoist pipe", ret);
@@ -60,9 +75,13 @@ int main(int argc, char *argv[])
 	if((ret = pipe(h2s))<0){
 		error("ERROR opening Hoist - Server pipe", ret);
 	}
+	fprintf(log, "%s: pipes opened\n", NAME); fflush(log);
 	/* s2h is the input pipe of the hoist, h2s is its output pipe */
 	/* Spawn without opening a new shell, since hoist doesn't output anything */
-	if((hoist = spawn("./hoist", s2h, h2s, 0))<0) error("ERROR hoist generation", hoist);
+	if((hoist = spawn("./hoist", fd_log, s2h, h2s, 0))<0) error("ERROR hoist generation", hoist);
+	close(s2h[0]);
+	close(h2s[1]);
+	fprintf(log, "%s: hoist spawned\n", NAME); fflush(log);
 
 	bzero((char *) &serv_addr, sizeof(serv_addr));
 	portno = atoi(argv[1]);
@@ -75,9 +94,11 @@ int main(int argc, char *argv[])
 	}
 	listen(sockfd,5);
 	clilen = sizeof(cli_addr);
+	fprintf(log, "%s: listening to socket\n", NAME); fflush(log);
 
 	if ((newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen)) < 0) 
 		error("ERROR on accept", newsockfd);
+	fprintf(log, "%s: communication started\n", NAME); fflush(log);
 
 	while(in!='E'){
 		// --- preconfig ---
@@ -129,6 +150,7 @@ int main(int argc, char *argv[])
 		select(1, NULL, NULL, NULL, &tv); // simply used as a timer
 		//usleep(1000000*(tv.tv_sec)+(tv.tv_usec));			// tv will yield the amount of time passed before reading
 	}														// with this usleep we approximate a period of 1s for the serve
+	fprintf(log, "%s: communication terminated\n", NAME); fflush(log);
 	
     waitpid(hoist, &ret, 0);
 	if (!WIFEXITED(ret)){
@@ -138,39 +160,42 @@ int main(int argc, char *argv[])
 	else
 		printf("Hoist exited with value %d\n", WEXITSTATUS(ret)); fflush(stdout);
 	
+	fprintf(log, "%s: exiting\n", NAME); fflush(log);
 	close(s2h[1]);
 	close(h2s[0]);
+	close(fd_log);
 	close(newsockfd);
 	return 0; 
 }
 
-int spawn(char* ex_name, int *fd_in, int *fd_out, char new_shell) {
+int spawn(char* ex_name, int fd_log, int *fd_in, int *fd_out, char new_shell) {
 	int ret;
 	pid_t child_pid = fork();
-	char *args[6];
+	char *args[7];
 	int i = 0;
 	if (child_pid != 0)
 	{	
 		/* Father closes fd_in[0], since it will write on it */
 		/* Father closes fd_out[1], since it will read from it */
-		if (fd_in!=NULL) 	close(fd_in[0]);
-		if (fd_out!=NULL)	close(fd_out[1]);
+		/*if (fd_in!=NULL) 	close(fd_in[0]);
+		if (fd_out!=NULL)	close(fd_out[1]);*/
 		return child_pid;
 	}
 	else 
 	{
 		/* Child closes fd_in[1], since it will read from it */
 		/* Father closes fd_out[0], since it will write on it */
-		if (fd_in!=NULL)	close(fd_in[1]);
-		if (fd_out!=NULL)	close(fd_out[0]);
-		char tmp_in[5]="", tmp_out[5]="";
-		sprintf(tmp_in, "%d", fd_in[0]);
-		sprintf(tmp_out, "%d", fd_out[1]);
+		char tmp_log[5] = "", tmp_in[5]="", tmp_out[5]="";
+		sprintf(tmp_log, "%d", fd_log);
+		if (fd_in!=NULL)	{close(fd_in[1]); sprintf(tmp_in, "%d", fd_in[0]);}
+		if (fd_out!=NULL)	{close(fd_out[0]); sprintf(tmp_out, "%d", fd_out[1]);}
+		
 		if (new_shell){ 
 			args[i++] = "/usr/bin/konsole";
 			args[i++] = "-e";
 		}
 		args[i++] = ex_name;
+		args[i++] = tmp_log;
 		args[i++] = tmp_in;
 		args[i++] = tmp_out;
 		args[i++] = (char*)NULL;

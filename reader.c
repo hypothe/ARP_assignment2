@@ -18,15 +18,32 @@ void error(char *msg, int ret)
 
 int main(int argc, char * argv[])
 {
-  int ret;
-  int sockfd = atoi(argv[1]);
-  char buffer[25]; //will be used for printing hoist status
-  msg_t msg = {0,0};
+	const char *NAME = "READER";
+	int ret;
+	int sockfd;
+	char buffer[25]; //will be used for printing hoist status
+	msg_t msg = {0,0};
+  
+	FILE *log;
+	int fd_log;
+	
+	if (argc<3){
+		fprintf(stderr,"READER: too few arguments passed\n");
+		exit(1);
+	}
+	
+	fd_log = atoi(argv[1]);
+	if((log = fdopen(fd_log, "w"))==(FILE*)NULL){
+		perror("READER: Log file open from filedes");
+	}
+	sockfd = atoi(argv[2]);
+	
+	fprintf(log, "%s: starting\n", NAME); fflush(log);
   while (1)
   {
     bzero(buffer, 25);
     if ((ret = read(sockfd, &msg, sizeof(msg))) < 0)
-      error("ERROR reading from socket", ret);
+      error("READER: reading from socket", ret);
 		switch (msg.status) {
 			case 'U':
 				sprintf(buffer, "Hoist going up");
@@ -51,5 +68,11 @@ int main(int argc, char * argv[])
     if (msg.status == 'E')
       break;
 	}
+	
+	
+	fprintf(log, "%s: exiting\n", NAME); fflush(log);
+	close(fd_log);
+	close(sockfd);
+	
   exit (0);
 }
