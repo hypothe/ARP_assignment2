@@ -1,34 +1,11 @@
 /* A simple server in the internet domain using TCP
    The port number is passed as an argument */
-#include <stdio.h>
-#include <sys/types.h> 
+
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <stdlib.h>
-#include <strings.h>
-#include <unistd.h>
 #include <sys/select.h>
 #include <sys/wait.h>
-
-#define MAX_HEIGHT 200
-#define MIN_HEIGHT 0
-#define STEP 5
-#define MAX_STEP MAX_HEIGHT/STEP
-#define BUFSIZE 20
-
-
-int spawn(char *ex_name, int fd_log, int *fd_in, int *fd_out, char new_shell);
-
-typedef struct message{
-	int height;
-	char status;
-} msg_t;
-
-void error(char *msg, int ret)
-{
-    perror(msg);
-    exit(ret); // error propagation
-}
+#include "hoistlib.h"
 
 int main(int argc, char *argv[])
 {
@@ -47,12 +24,12 @@ int main(int argc, char *argv[])
 	char send=0;
 	int r_height=0;
 	char err_msg[256];
-	
+
 	FILE *log;
 	char fd_log_str[20];
 	int  fd_log;
 	char *log_file = "./server_log.txt";
-	
+
 	if((log = fopen(log_file, "w"))==(FILE*)NULL){	// See NOTE_2
 		perror("Log file open from");
 		exit(1);
@@ -64,14 +41,14 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 	fprintf(log, "%s: starting\n", NAME); fflush(log);
-	
-	if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
+
+	if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
 		error("ERROR opening socket", sockfd);
 	fprintf(log, "%s: socket opened\n", NAME); fflush(log);
-		
+
 	if((ret = pipe(s2h))<0){
 		error("ERROR opening Server - Hoist pipe", ret);
-	}	
+	}
 	if((ret = pipe(h2s))<0){
 		error("ERROR opening Hoist - Server pipe", ret);
 	}
@@ -88,7 +65,7 @@ int main(int argc, char *argv[])
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_addr.s_addr = INADDR_ANY;
 	serv_addr.sin_port = htons(portno);
-	if ((ret = bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr))) < 0){ 
+	if ((ret = bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr))) < 0){
 		error("ERROR on binding", ret);
 		close(sockfd);
 	}
@@ -96,7 +73,7 @@ int main(int argc, char *argv[])
 	clilen = sizeof(cli_addr);
 	fprintf(log, "%s: listening to socket\n", NAME); fflush(log);
 
-	if ((newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen)) < 0) 
+	if ((newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen)) < 0)
 		error("ERROR on accept", newsockfd);
 	fprintf(log, "%s: communication started\n", NAME); fflush(log);
 
@@ -106,7 +83,7 @@ int main(int argc, char *argv[])
 		FD_SET(newsockfd, &fd_in);
 		tv.tv_sec = sec; tv.tv_usec = usec;
 		in = 0;	// reset each time, in order to avoid problems if we somehow read 0Byte from the readable socket
-		
+
 		if((ret=select(newsockfd+1, &fd_in, NULL, NULL, &tv)) < 0){	error("Select on socket", ret); }
 		/* Updates status only if a new one is submitted and it is compatible with current status, otherwise stop the hoist */
 		if (FD_ISSET(newsockfd, &fd_in)){
@@ -115,7 +92,7 @@ int main(int argc, char *argv[])
 			if ((in == 'U' && STATUS != 'T') || (in == 'D' && STATUS != 'B') || (in == 'E') || (in == 'S'))
 				STATUS = in;
 		}
-		
+
 		switch (STATUS){
 			case 'U':	 // go UP
 				send = '+';
@@ -137,21 +114,21 @@ int main(int argc, char *argv[])
 				break;
 		}
 		if ((ret = write(s2h[1],&send,1))<0) 					error("ERROR writing on Server - Hoist pipe", ret);
-		
+
 		if ((ret = read(h2s[0],&r_height,sizeof(r_height)))<0) error("ERROR reading from Hoist - Server pipe", ret);
-		
+
 		if (r_height>=MAX_HEIGHT && STATUS != 'E') STATUS = 'T';	// set TOP or BOTTOM state
 		if (r_height<=MIN_HEIGHT && STATUS != 'E') STATUS = 'B';	// the condition allows to take the more strict height limit if
 																	// the Server and Hoist one are different (this is not the case)
-		if (ret == 0) STATUS = 'E';	//If the pipe results readable but nothing is read it's possible the hoist crashed								
+		if (ret == 0) STATUS = 'E';	//If the pipe results readable but nothing is read it's possible the hoist crashed
 		msg.height = r_height; msg.status = STATUS;
-		
+
 		if ((ret = write(newsockfd,&msg,sizeof(msg)))<0) 		error("ERROR writing on socket", ret);
 		select(1, NULL, NULL, NULL, &tv); // simply used as a timer
 		//usleep(1000000*(tv.tv_sec)+(tv.tv_usec));			// tv will yield the amount of time passed before reading
 	}														// with this usleep we approximate a period of 1s for the serve
 	fprintf(log, "%s: communication terminated\n", NAME); fflush(log);
-	
+
     waitpid(hoist, &ret, 0);
 	if (!WIFEXITED(ret)){
 		sprintf(err_msg, "Hoist terminated with an error %d %d\n", WIFSIGNALED(ret), WTERMSIG(ret));
@@ -159,49 +136,11 @@ int main(int argc, char *argv[])
 	}
 	else
 		printf("Hoist exited with value %d\n", WEXITSTATUS(ret)); fflush(stdout);
-	
+
 	fprintf(log, "%s: exiting\n", NAME); fflush(log);
 	close(s2h[1]);
 	close(h2s[0]);
 	close(fd_log);
 	close(newsockfd);
-	return 0; 
-}
-
-int spawn(char* ex_name, int fd_log, int *fd_in, int *fd_out, char new_shell) {
-	int ret;
-	pid_t child_pid = fork();
-	char *args[7];
-	int i = 0;
-	if (child_pid != 0)
-	{	
-		/* Father closes fd_in[0], since it will write on it */
-		/* Father closes fd_out[1], since it will read from it */
-		/*if (fd_in!=NULL) 	close(fd_in[0]);
-		if (fd_out!=NULL)	close(fd_out[1]);*/
-		return child_pid;
-	}
-	else 
-	{
-		/* Child closes fd_in[1], since it will read from it */
-		/* Father closes fd_out[0], since it will write on it */
-		char tmp_log[5] = "", tmp_in[5]="", tmp_out[5]="";
-		sprintf(tmp_log, "%d", fd_log);
-		if (fd_in!=NULL)	{close(fd_in[1]); sprintf(tmp_in, "%d", fd_in[0]);}
-		if (fd_out!=NULL)	{close(fd_out[0]); sprintf(tmp_out, "%d", fd_out[1]);}
-		
-		if (new_shell){ 
-			args[i++] = "/usr/bin/konsole";
-			args[i++] = "-e";
-		}
-		args[i++] = ex_name;
-		args[i++] = tmp_log;
-		args[i++] = tmp_in;
-		args[i++] = tmp_out;
-		args[i++] = (char*)NULL;
-		
-		ret = execvp(args[0], args);
-		perror("exec failed");
-		exit(ret);
-	}
+	return 0;
 }

@@ -1,20 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <strings.h>
-#include <string.h>
-
-typedef struct message{
-	int height;
-	char status;
-} msg_t;
-
-void error(char *msg, int ret)
-{
-    perror(msg);
-    exit(ret); // error propagation
-}
+#include "hoistlib.h"
 
 int main(int argc, char * argv[])
 {
@@ -23,21 +7,21 @@ int main(int argc, char * argv[])
 	int sockfd;
 	char buffer[25]; //will be used for printing hoist status
 	msg_t msg = {0,0};
-  
+
 	FILE *log;
 	int fd_log;
-	
+
 	if (argc<3){
 		fprintf(stderr,"READER: too few arguments passed\n");
 		exit(1);
 	}
-	
+
 	fd_log = atoi(argv[1]);
 	if((log = fdopen(fd_log, "w"))==(FILE*)NULL){
 		perror("READER: Log file open from filedes");
 	}
 	sockfd = atoi(argv[2]);
-	
+
 	fprintf(log, "%s: starting\n", NAME); fflush(log);
   while (1)
   {
@@ -68,11 +52,11 @@ int main(int argc, char * argv[])
     if (msg.status == 'E')
       break;
 	}
-	
-	
+
+
 	fprintf(log, "%s: exiting\n", NAME); fflush(log);
 	close(fd_log);
 	close(sockfd);
-	
+
   exit (0);
 }
