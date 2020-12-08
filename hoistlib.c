@@ -51,17 +51,6 @@ int spawn(char* ex_name, int fd_log, int *fd_in, int *fd_out, char new_shell) {
 }
 
 /* --------------Message manipulation functions ---------------------------------- */
-/*
-int msg_tryup  		(msg_t msg){
-	msg->height = msg->height>=MAX_HEIGHT? MAX_HEIGHT:msg->height + STEP;
-	msg->status = msg->height>=MAX_HEIGHT? TOP:UP; 
-	return msg->height;
-}
-int msg_trydown		(msg_t msg){
-	msg->height = msg->height<=MIN_HEIGHT? MIN_HEIGHT:msg->height - STEP;
-	msg->status = msg->height<=MIN_HEIGHT? BOTTOM:DOWN; 
-	return msg->height;
-}*/
 void height_tryup  	(int *height){
 	*height = *height>=MAX_HEIGHT? MAX_HEIGHT:*height + STEP;
 }
