@@ -13,6 +13,7 @@ int main(int argc, char *argv[])
     struct hostent *server;
     int ret;
     char out = 0;
+	char err_msg[80];
 
 	FILE *log;
 	char fd_log_str[20];
@@ -25,7 +26,7 @@ int main(int argc, char *argv[])
     }
     portno = atoi(argv[2]);
 
-	if((log = fopen(log_file, "w"))==(FILE*)NULL){	// See NOTE_2
+	if((log = fopen(log_file, "w"))==(FILE*)NULL){
 		perror("Log file open from");
 		exit(1);
 	}
@@ -50,14 +51,11 @@ int main(int argc, char *argv[])
         error("ERROR connecting", ret);
 	fprintf(log, "%s: connected succesfully\n", NAME); fflush(log);
 
-    //char sock_string[16];
-    //sprintf(sock_string, "%d", sockfd);
-    //char * arg_list[] = { "/usr/bin/konsole",  "-e", "./reader", sock_string, (char*)NULL };
 	int tmp_socket[2] = {sockfd, -1};
     int child_pid = spawn("./reader", fd_log, tmp_socket, NULL, 1);
 	fprintf(log, "%s: reader spawned\n", NAME); fflush(log);
 
-    while (1) {
+    while (out!='E') {
       printf("Enter the hoist command:\n");
       scanf(" %c", &out);
       if ((out != 'U') && (out != 'S') && (out != 'D') && (out != 'E'))
@@ -67,15 +65,16 @@ int main(int argc, char *argv[])
       }
       if ((ret = write(sockfd, &out, 1)) < 0)
         error("ERROR writing to socket", ret);
-      if (out == 'E')
-        break;
     }
 	fprintf(log, "%s: communication terminated\n", NAME); fflush(log);
 
     waitpid(child_pid, &ret, 0);
-    if (!WIFEXITED(ret))
-  		perror("Reader terminated with an error.\n");
-		printf("Reader exited with value %d\n", WEXITSTATUS(ret));
+	if (!WIFEXITED(ret)){
+		sprintf(err_msg, "Reader terminated with an error %d %d\n", WIFSIGNALED(ret), WTERMSIG(ret));
+		perror(err_msg);
+	}
+	else
+		printf("Reader exited with value %d\n", WEXITSTATUS(ret)); fflush(stdout);
 
 	fprintf(log, "%s: exiting\n", NAME); fflush(log);
 	close(fd_log);

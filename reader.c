@@ -23,7 +23,7 @@ int main(int argc, char * argv[])
 	sockfd = atoi(argv[2]);
 
 	fprintf(log, "%s: starting\n", NAME); fflush(log);
-  while (1)
+  while (msg.status != 'E')
   {
     bzero(buffer, 25);
     if ((ret = read(sockfd, &msg, sizeof(msg))) < 0)
@@ -48,10 +48,8 @@ int main(int argc, char * argv[])
 				sprintf(buffer, "Exiting");
 				break;
 		}
-    printf("height: %d cm\tstatus: %s\n", msg.height, buffer);
-    if (msg.status == 'E')
-      break;
-	}
+	printf("height: %d cm\tstatus: %s\n", msg.height, buffer); fflush(stdout);
+  }
 
 
 	fprintf(log, "%s: exiting\n", NAME); fflush(log);
