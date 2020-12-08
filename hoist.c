@@ -25,16 +25,16 @@ int main(int argc, char *argv[])
 	fd_out = atoi(argv[3]);
 	fprintf(log, "%s: starting\n", NAME); fflush(log);
 
-	while(in!= 'E'){
+	while(in!= EXIT){
 		in = 0;	// to avoid it retaining previous values and potentially keep moving in case of red errors
 		if((ret = read(fd_in, &in, 1))<0) error("ERROR reading from Server - Hoist pipe", ret);
 
 		switch (in){
 			case '+':	 // go UP
-				height = height>=MAX_HEIGHT? height:height + STEP;
+				height_tryup(&height);
 				break;
 			case '-': 	// go DOWN
-				height = height<=MIN_HEIGHT? height: height - STEP;
+				height_trydown(&height);
 				break;
 			// default: // will simply do nothing
 		}

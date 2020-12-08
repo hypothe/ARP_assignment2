@@ -55,10 +55,11 @@ int main(int argc, char *argv[])
     int child_pid = spawn("./reader", fd_log, tmp_socket, NULL, 1);
 	fprintf(log, "%s: reader spawned\n", NAME); fflush(log);
 
-    while (out!='E') {
+    while (out!=EXIT) {
       printf("Enter the hoist command:\n");
+	  printf("<U> UP\t\t<D> DOWN\t<S> STOP\t<E> EXIT\n");
       scanf(" %c", &out);
-      if ((out != 'U') && (out != 'S') && (out != 'D') && (out != 'E'))
+      if ((out != UP) && (out != STOP) && (out != DOWN) && (out != EXIT))
       {
         printf("This command does not exist. Please, try again.\n");
         continue;

@@ -10,14 +10,15 @@
 int main(int argc, char *argv[])
 {
 	const char *NAME = "SERVER";
-	char STATUS = 'B';
+	char STATUS = BOTTOM;
 	int sockfd, newsockfd, portno, clilen;
 	struct sockaddr_in serv_addr, cli_addr;
 	int ret;
 	unsigned long sec = 1, usec = 0;
 	char in=0;
 	struct timeval tv;
-	msg_t msg = {0,0};
+	msg_t msg;
+	int msg_size;
 	fd_set fd_in;
 	int s2h[2], h2s[2]; // pipes for server - hoist communication
 	pid_t hoist;
@@ -60,6 +61,8 @@ int main(int argc, char *argv[])
 	close(h2s[1]);
 	fprintf(log, "%s: hoist spawned\n", NAME); fflush(log);
 
+	msg_init(&msg); msg_size = msg_getsize(); // initialize message pointed to by msg
+
 	bzero((char *) &serv_addr, sizeof(serv_addr));
 	portno = atoi(argv[1]);
 	serv_addr.sin_family = AF_INET;
@@ -77,7 +80,7 @@ int main(int argc, char *argv[])
 		error("ERROR on accept", newsockfd);
 	fprintf(log, "%s: communication started\n", NAME); fflush(log);
 
-	while(in!='E'){
+	while(in!=EXIT){
 		// --- preconfig ---
 		FD_ZERO(&fd_in);
 		FD_SET(newsockfd, &fd_in);
@@ -89,41 +92,41 @@ int main(int argc, char *argv[])
 		if (FD_ISSET(newsockfd, &fd_in)){
 			if ((ret = read(newsockfd,&in,1)) < 0) error("ERROR reading from socket", ret);
 			// printf("Received request: ");	fflush(stdout);// won't print nicely if we read 0 bit
-			if ((in == 'U' && STATUS != 'T') || (in == 'D' && STATUS != 'B') || (in == 'E') || (in == 'S'))
+			if ((in == UP && STATUS != TOP) || (in == DOWN && STATUS != BOTTOM) || (in == EXIT) || (in == STOP))
 				STATUS = in;
 		}
 
 		switch (STATUS){
-			case 'U':	 // go UP
+			case UP:	 // go UP
 				send = '+';
 				break;
-			case 'D': 	// go DOWN
+			case DOWN: 	// go DOWN
 				send = '-';
 				break;
-			case 'S': 	// STOP
+			case STOP: 	// STOP
 				send = 0;
 				break;
-			case 'T':
+			case TOP:
 				send = 0;
 				break;
-			case 'B':
+			case BOTTOM:
 				send = 0;
 				break;
-			case 'E':	// END
-				send = 'E';
+			case EXIT:	// END
+				send = EXIT;
 				break;
 		}
 		if ((ret = write(s2h[1],&send,1))<0) 					error("ERROR writing on Server - Hoist pipe", ret);
 
-		if ((ret = read(h2s[0],&r_height,sizeof(r_height)))<0) error("ERROR reading from Hoist - Server pipe", ret);
+		if ((ret = read(h2s[0],&r_height,sizeof(r_height)))<0) 	error("ERROR reading from Hoist - Server pipe", ret);
 
-		if (r_height>=MAX_HEIGHT && STATUS != 'E') STATUS = 'T';	// set TOP or BOTTOM state
-		if (r_height<=MIN_HEIGHT && STATUS != 'E') STATUS = 'B';	// the condition allows to take the more strict height limit if
+		if (r_height>=MAX_HEIGHT && STATUS != EXIT) STATUS = TOP;	// set TOP or BOTTOM state
+		if (r_height<=MIN_HEIGHT && STATUS != EXIT) STATUS = BOTTOM;	// the condition allows to take the more strict height limit if
 																	// the Server and Hoist one are different (this is not the case)
-		if (ret == 0) STATUS = 'E';	//If the pipe results readable but nothing is read it's possible the hoist crashed
-		msg.height = r_height; msg.status = STATUS;
-
-		if ((ret = write(newsockfd,&msg,sizeof(msg)))<0) 		error("ERROR writing on socket", ret);
+		if (ret == 0) STATUS = EXIT;	//If the pipe results readable but nothing is read it's possible the hoist crashed
+		//msg.height = r_height; msg.status = STATUS;
+		msg_setheight(msg, r_height); msg_setstatus(msg, STATUS);
+		if ((ret = write(newsockfd,msg,msg_size))<0) 			error("ERROR writing on socket", ret);
 		select(1, NULL, NULL, NULL, &tv); // simply used as a timer
 		//usleep(1000000*(tv.tv_sec)+(tv.tv_usec));			// tv will yield the amount of time passed before reading
 	}														// with this usleep we approximate a period of 1s for the serve
@@ -138,6 +141,7 @@ int main(int argc, char *argv[])
 		printf("Hoist exited with value %d\n", WEXITSTATUS(ret)); fflush(stdout);
 
 	fprintf(log, "%s: exiting\n", NAME); fflush(log);
+	msg_free(msg);
 	close(s2h[1]);
 	close(h2s[0]);
 	close(fd_log);

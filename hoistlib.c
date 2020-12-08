@@ -1,5 +1,12 @@
 #include "hoistlib.h"
 
+struct message{
+	int height;
+	char status;
+};
+
+// ------------- Utility functions ------------------ 
+
 void error(char *msg, int ret) {
     perror(msg);
     exit(ret); // error propagation
@@ -41,4 +48,58 @@ int spawn(char* ex_name, int fd_log, int *fd_in, int *fd_out, char new_shell) {
 		perror("exec failed");
 		exit(ret);
 	}
+}
+
+/* --------------Message manipulation functions ---------------------------------- */
+/*
+int msg_tryup  		(msg_t msg){
+	msg->height = msg->height>=MAX_HEIGHT? MAX_HEIGHT:msg->height + STEP;
+	msg->status = msg->height>=MAX_HEIGHT? TOP:UP; 
+	return msg->height;
+}
+int msg_trydown		(msg_t msg){
+	msg->height = msg->height<=MIN_HEIGHT? MIN_HEIGHT:msg->height - STEP;
+	msg->status = msg->height<=MIN_HEIGHT? BOTTOM:DOWN; 
+	return msg->height;
+}*/
+void height_tryup  	(int *height){
+	*height = *height>=MAX_HEIGHT? MAX_HEIGHT:*height + STEP;
+}
+void height_trydown	(int *height){
+	*height = *height<=MIN_HEIGHT? MIN_HEIGHT:*height - STEP;
+}
+
+void msg_init		(msg_t *pp_msg){
+	(*pp_msg) = (msg_t)malloc(sizeof(struct message));
+	(*pp_msg)->height = 0;
+	(*pp_msg)->status = BOTTOM;
+}
+
+void msg_free(msg_t p_msg){
+	/*	
+	Function to free the memory allocated for a message of type 
+	struct message
+	
+	Used to deallocate memory, not necessary but cleaner
+
+	Arguments
+	p_msg (msg_t)	:	pointer to the message to free up
+	*/
+	free(p_msg);
+}
+
+void msg_setheight	(msg_t p_msg, int height){
+	p_msg->height = height;
+}
+void msg_setstatus	(msg_t p_msg, char status){
+	p_msg->status = status;
+}
+int  msg_getheight	(msg_t p_msg){
+	return p_msg->height;
+}
+char msg_getstatus	(msg_t p_msg){
+	return p_msg->status;
+}
+int  msg_getsize	(){
+	return sizeof(struct message);
 }
