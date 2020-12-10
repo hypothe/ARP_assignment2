@@ -11,7 +11,6 @@
 #define MAX_HEIGHT 200
 #define MIN_HEIGHT 0
 #define STEP 5
-#define MAX_STEP MAX_HEIGHT/STEP
 
 typedef struct message* msg_t;
 enum status {STOP = 'S', UP = 'U', DOWN = 'D', EXIT = 'E', TOP = 'T', BOTTOM = 'B'};
