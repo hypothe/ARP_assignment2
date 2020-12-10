@@ -11,8 +11,8 @@ Approximative, not hard constraints but suggestions, can obviosuly be modified t
 * ~~__Dec 05 preparing the ground__: server produces messages '+' and '-' cyclicaly when in the appropriate statuses, client outputs status updates periodically~~
 
 * ~~__Dec 06 hoisting up__: hoist process generated, transfer of '+', '-' to it via pipe~~
-* __Dec 07 finalize__: _day to finalize communication not already managed, and clean things up_
-* __Dec 08 gone gold__: all code should be completely done by now
+* ~~__Dec 07 finalize__: _day to finalize communication not already managed, and clean things up_~~
+* ~~__Dec 08 gone gold__: all code should be completely done by now~~
 * __Dec 09 shippable__: documentation completed
 * __Dec 11 hit the shelves__: Assignment2 is due
 
