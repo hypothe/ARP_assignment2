@@ -47,7 +47,6 @@ int spawn(char* ex_name, int fd_log, int *fd_in, int *fd_out, char new_shell) {
 	}
 }
 
-/* --------------Message manipulation functions ---------------------------------- */
 void height_tryup  	(int *height){
 	*height = *height>=MAX_HEIGHT? MAX_HEIGHT:*height + STEP;
 }
@@ -55,6 +54,7 @@ void height_trydown	(int *height){
 	*height = *height<=MIN_HEIGHT? MIN_HEIGHT:*height - STEP;
 }
 
+/* --------------Message manipulation functions ---------------------------------- */
 void msg_init		(msg_t *pp_msg){
 	(*pp_msg) = (msg_t)malloc(sizeof(struct message));
 	(*pp_msg)->height = 0;
