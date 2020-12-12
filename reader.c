@@ -59,7 +59,7 @@ int main(int argc, char * argv[])
 				break;
 		}
 		//print the hoist height and status
-		printf("height: %d cm\tstatus: %s\n", msg_getheight(msg), buffer); fflush(stdout);
+		printf("height: %3d cm\tstatus: %s\n", msg_getheight(msg), buffer); fflush(stdout);
 	}
 
 
