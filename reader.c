@@ -2,21 +2,23 @@
 
 int main(int argc, char * argv[])
 {
-	const char *NAME = "READER";
-	int ret;
+	const char *NAME = "READER"; //process name for the log file
+	int ret; //for storing return values
 	int sockfd;
-	char buffer[25]; //will be used for printing hoist status
-	msg_t msg;
+	char buffer[25]; //for printing hoist status
+	msg_t msg; //message received from the server
 	int msg_size;
 
 	FILE *log;
 	int fd_log;
 
+	//check number of arguments provided
 	if (argc<3){
 		fprintf(stderr,"READER: too few arguments passed\n");
 		exit(1);
 	}
 
+	//open the log file
 	fd_log = atoi(argv[1]);
 	if((log = fdopen(fd_log, "w"))==(FILE*)NULL){
 		perror("READER: Log file open from filedes");
@@ -26,11 +28,16 @@ int main(int argc, char * argv[])
 	msg_init(&msg); msg_size = msg_getsize(); // initialize message pointed to by msg
 
 	fprintf(log, "%s: starting\n", NAME); fflush(log);
+	
+	//until the EXIT command is received from the server
 	while (msg_getstatus(msg) != EXIT)
 	{
+		//clear the buffer
 		bzero(buffer, 25);
+		//read the message from the server
 		if ((ret = read(sockfd, msg, msg_size)) < 0)
 			error("READER: reading from socket", ret);
+		//get the hoist status and write it into the buffer
 		switch (msg_getstatus(msg)) {
 			case UP:
 				sprintf(buffer, "Hoist going up");
@@ -51,12 +58,15 @@ int main(int argc, char * argv[])
 				sprintf(buffer, "Exiting");
 				break;
 		}
+		//print the hoist height and status
 		printf("height: %d cm\tstatus: %s\n", msg_getheight(msg), buffer); fflush(stdout);
 	}
 
 
 	fprintf(log, "%s: exiting\n", NAME); fflush(log);
+	//free the memory occupied by the message
 	msg_free(msg);
+	//close socket and log file descriptors before exiting
 	close(fd_log);
 	close(sockfd);
 

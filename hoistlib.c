@@ -1,8 +1,9 @@
 #include "hoistlib.h"
 
+// Server - Reader message structure
 struct message{
-	int height;
-	char status;
+	int height; //hoist height
+	char status; //hoist status
 };
 
 // ------------- Utility functions ------------------ 
