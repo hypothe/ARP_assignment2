@@ -4,6 +4,13 @@
 #include <sys/wait.h>
 #include "hoistlib.h"
 
+/*	
+	NOTE_1
+	Moreover, the log file had to be opened with fopen from the master process, retrieving the file descriptor
+	from the FILE pointer and passing that to each child. That's because, trying fopen on the same file, with append mode, still 
+	didn't result in the correct behaviour (child processes were unable to write)
+*/
+
 int main(int argc, char *argv[])
 {
 	const char *NAME = "SERVER"; //process name for the log file
@@ -28,7 +35,7 @@ int main(int argc, char *argv[])
 	char *log_file = "./server_log.txt";
 
 	//open the log file
-	if((log = fopen(log_file, "w"))==(FILE*)NULL){	// See NOTE_2
+	if((log = fopen(log_file, "w"))==(FILE*)NULL){	// See NOTE_1
 		perror("Log file open from");
 		exit(1);
 	}
@@ -134,13 +141,11 @@ int main(int argc, char *argv[])
 		if (r_height<=MIN_HEIGHT && STATUS != EXIT) STATUS = BOTTOM;	// the condition allows to take the more strict height limit if
 																	// the Server and Hoist one are different (this is not the case)
 		if (ret == 0) STATUS = EXIT;	//If the pipe results readable but nothing is read it's possible the hoist crashed
-		//msg.height = r_height; msg.status = STATUS;
 		//compose the message
 		msg_setheight(msg, r_height); msg_setstatus(msg, STATUS);
 		//send the message to the reader
 		if ((ret = write(newsockfd,msg,msg_size))<0) 			error("ERROR writing on socket", ret);
 		select(1, NULL, NULL, NULL, &tv); // simply used as a timer
-		//usleep(1000000*(tv.tv_sec)+(tv.tv_usec));			// tv will yield the amount of time passed before reading
 	}														// with this usleep we approximate a period of 1s for the serve
 	fprintf(log, "%s: communication terminated\n", NAME); fflush(log);
 

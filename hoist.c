@@ -2,6 +2,12 @@
 #include <netinet/in.h>
 #include "hoistlib.h"
 
+/*
+	NOTE_1
+	The log file is opened from the file descriptor passed from the master process, in order to avoid problem with 
+	multiple processes trying to append to it
+*/
+
 int main(int argc, char *argv[])
 {
 	const char *NAME = "HOIST"; //process name for the log file

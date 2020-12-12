@@ -4,6 +4,13 @@
 #include <netdb.h>
 #include "hoistlib.h"
 
+/*	
+	NOTE_1
+	Moreover, the log file had to be opened with fopen from the master process, retrieving the file descriptor
+	from the FILE pointer and passing that to each child. That's because, trying fopen on the same file, with append mode, still 
+	didn't result in the correct behaviour (child processes were unable to write)
+*/
+
 int main(int argc, char *argv[])
 {
 	const char *NAME = "CLIENT"; //process name for the log file
