@@ -63,15 +63,6 @@ void msg_init		(msg_t *pp_msg){
 }
 
 void msg_free(msg_t p_msg){
-	/*	
-	Function to free the memory allocated for a message of type 
-	struct message
-	
-	Used to deallocate memory, not necessary but cleaner
-
-	Arguments
-	p_msg (msg_t)	:	pointer to the message to free up
-	*/
 	free(p_msg);
 }
 
