@@ -12,22 +12,22 @@ executables (in which case the first command is the faster approach) or of the s
 code themselves (in which case the two parts, server and client, might need to be compiled on two
 different machines).
 
+To compile every script presented (already linking libraries and cleaning object files) use
 ```bash
 $ make
 ```
-Used to compile every script presented (already linking libraries and cleaning object files).
 
+To compile only the scripts referring to the server side, that is the server itself
+and the hoist "simulator" (already linking libraries and cleaning object files) use
 ```bash
 $ make hoist_server
 ```
-Can be used to compile only the scripts referring to the server side, that is the server itself
-and the hoist "simulator" (already linking libraries and cleaning object files).
 
+To compile only the scripts referring to the client side, that is the "input"
+and the "output" user interface (already linking libraries and cleaning object files) use
 ```bash
 $ make hoist_interface
 ```
-Can be used to compile only the scripts referring to the client side, that is the "input"
-and the "output" user interface (already linking libraries and cleaning object files).
 
 Running
 --------------------
